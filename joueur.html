@@ -45,6 +45,7 @@ main { flex: 1; min-height: 0; display: flex; }
 #scroller.dragging, #scroller.dragging * { cursor: grabbing !important; }
 #stage { display: flex; height: 100%; min-height: 420px; }
 #side { width: 210px; flex: none; background: var(--soft); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; padding: 8px; overflow: auto; }
+html.sideHidden #side { display: none; }
 #side h3 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .box { border: 2px dashed var(--line); border-radius: 8px; padding: 6px; min-height: 60px; display: flex; flex-wrap: wrap; gap: 4px; align-content: flex-start; background: #fff; }
 .box.target { border-color: var(--hl); background: #fffbe0; cursor: pointer; }
@@ -206,6 +207,8 @@ dialog::backdrop { background: rgba(0,0,0,.4); }
   <span class="spacer"></span>
   <span class="small" id="netState"></span>
   <span class="small muted" id="saveInfo" style="overflow:hidden;text-overflow:ellipsis"></span>
+  <button class="small" id="btnSide" hidden>Replier les unités</button>
+  <button class="small" id="btnFull" title="Afficher la page sur tout l'écran">Plein écran</button>
   <button class="small" id="btnExport" title="Télécharger un fichier de sauvegarde de la partie">Sauvegarder</button>
   <button class="small" id="btnImport" title="Reprendre une partie depuis un fichier de sauvegarde">Ouvrir</button>
   <button class="small" id="btnNew">Nouvelle partie</button>
@@ -2358,6 +2361,9 @@ document.addEventListener('keydown', e => {
   e.preventDefault(); const r = document.createRange(); r.selectNodeContents(lastMsg); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
 });
 $('#promptEnd').onclick = () => { if (S.phase === 'deploy') { UI.sel = null; UI.depMode = 'pions'; } else { UI.mode = null; UI.sel = null; UI.activeOrder = null; } refresh(); };
+$('#btnSide').onclick = () => { if (!S) return; S.sideHidden = !S.sideHidden; save(); refresh(); };
+$('#btnFull').onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); };
+document.addEventListener('fullscreenchange', () => { $('#btnFull').textContent = document.fullscreenElement ? 'Quitter le plein écran' : 'Plein écran'; fit(); });
 $('#zIn').onclick = () => { UI.zoom = Math.min(2.5, UI.zoom * 1.25); fit(); };
 $('#zOut').onclick = () => { UI.zoom = Math.max(1, UI.zoom / 1.25); fit(); };
 addEventListener('resize', fit);
@@ -2382,6 +2388,9 @@ function begin(camp) { S = freshState(camp); UI.depMode = 'pions'; save(); start
 function start() { UI.tab = 'phase'; buildStage(); refresh(); }
 function refresh() {
   if (!S) return;
+  const canHide = S.phase !== 'deploy'; const hidden = canHide && !!S.sideHidden;
+  document.documentElement.classList.toggle('sideHidden', hidden);
+  $('#btnSide').hidden = !canHide; $('#btnSide').textContent = hidden ? 'Afficher les unités' : 'Replier les unités';
   header(); tabs(); panel(); drawBoard(); timeline();
   const o = UI.activeOrder !== null ? S.orders[UI.activeOrder] : null;
   const txt = modeText(o); $('#prompt').style.display = txt ? 'block' : 'none'; $('#promptTxt').textContent = txt || '';
