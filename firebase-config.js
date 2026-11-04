@@ -1,9 +1,8 @@
-/* À remplir une seule fois : console Firebase > Paramètres du projet > Vos applications > Configuration.
-   Tant que apiKey vaut A_REMPLIR, les pages fonctionnent en copier-coller. */
+/* Configuration publique du projet Firebase Raspoutitsa. */
 window.RASP_FB = {
-  apiKey: "A_REMPLIR",
-  authDomain: "A_REMPLIR.firebaseapp.com",
-  databaseURL: "https://A_REMPLIR-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "A_REMPLIR",
-  appId: "A_REMPLIR"
+  apiKey: "AIzaSyARVxUtDXmlxUuwn4r19aRh9G73jubmA1E",
+  authDomain: "raspoutitsa-d911c.firebaseapp.com",
+  databaseURL: "https://raspoutitsa-d911c-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "raspoutitsa-d911c",
+  appId: "1:735537642911:web:0ca0d800cdd75967e511aa"
 };
