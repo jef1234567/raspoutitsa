@@ -1,0 +1,82 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "session": {
+      ".read": "auth != null",
+      ".write": "auth.token.email === 'arbitre@raspoutitsa.example'"
+    },
+    "boite": {
+      ".read": "auth.token.email === 'arbitre@raspoutitsa.example'",
+      ".write": "auth.token.email === 'arbitre@raspoutitsa.example'",
+      "B": {
+        ".read": "auth.token.email === 'bleu@raspoutitsa.example'",
+        "$tour": {
+          ".write": "auth.token.email === 'bleu@raspoutitsa.example' && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['turn','kind','text','at'])",
+          "text": {
+            ".validate": "newData.isString() && newData.val().length < 20000"
+          },
+          "turn": {
+            ".validate": "newData.isNumber()"
+          },
+          "kind": {
+            ".validate": "newData.val() === 'deploy' || newData.val() === 'orders'"
+          },
+          "at": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "R": {
+        ".read": "auth.token.email === 'rouge@raspoutitsa.example'",
+        "$tour": {
+          ".write": "auth.token.email === 'rouge@raspoutitsa.example' && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['turn','kind','text','at'])",
+          "text": {
+            ".validate": "newData.isString() && newData.val().length < 20000"
+          },
+          "turn": {
+            ".validate": "newData.isNumber()"
+          },
+          "kind": {
+            ".validate": "newData.val() === 'deploy' || newData.val() === 'orders'"
+          },
+          "at": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "cr": {
+      ".write": "auth.token.email === 'arbitre@raspoutitsa.example'",
+      ".read": "auth.token.email === 'arbitre@raspoutitsa.example'",
+      "B": {
+        ".read": "auth.token.email === 'bleu@raspoutitsa.example'"
+      },
+      "R": {
+        ".read": "auth.token.email === 'rouge@raspoutitsa.example'"
+      }
+    },
+    "refus": {
+      ".write": "auth.token.email === 'arbitre@raspoutitsa.example'",
+      ".read": "auth.token.email === 'arbitre@raspoutitsa.example'",
+      "B": {
+        ".read": "auth.token.email === 'bleu@raspoutitsa.example'"
+      },
+      "R": {
+        ".read": "auth.token.email === 'rouge@raspoutitsa.example'"
+      }
+    },
+    "arbitre": {
+      ".read": "auth.token.email === 'arbitre@raspoutitsa.example'",
+      ".write": "auth.token.email === 'arbitre@raspoutitsa.example'"
+    }
+  }
+}
