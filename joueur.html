@@ -1,9 +1,17 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" class="noGame">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Raspoutitsa – Poste du CMI</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#1d2126">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Raspoutitsa">
 <style>
 /* Mise en page : bandeau de tour, plateau défilant à gauche, panneau de phase à droite, frise en bas */
 :root {
@@ -211,8 +219,8 @@ dialog::backdrop { background: rgba(0,0,0,.4); }
   #stage { min-height: 0; }
   #side { width: 140px; padding: 5px; padding-left: max(5px, env(safe-area-inset-left)); }
   #scroller { touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; }
-  aside { position: fixed; top: 0; right: 0; bottom: 0; width: min(400px, 62vw); z-index: 20; transform: translateX(100%); transition: transform .18s; box-shadow: -6px 0 22px rgba(0,0,0,.28); padding-right: env(safe-area-inset-right); }
-  html.panelOpen aside { transform: none; }
+  aside { position: fixed; top: 0; right: 0; bottom: 0; width: min(400px, 62vw); z-index: 20; transform: translateX(100%); transition: transform .18s; padding-right: env(safe-area-inset-right); }
+  html.panelOpen aside { transform: none; box-shadow: -6px 0 22px rgba(0,0,0,.28); }
   #panelBtn.on { display: block; position: fixed; right: max(10px, env(safe-area-inset-right)); bottom: 10px; z-index: 21; min-height: 42px; padding: 6px 14px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
   html.panelOpen #panelBtn.on { right: calc(min(400px, 62vw) + 8px); }
   #netRm.on { display: inline-block; margin-left: 8px; }
@@ -220,8 +228,16 @@ dialog::backdrop { background: rgba(0,0,0,.4); }
   dialog { max-height: 94dvh; overflow: auto; }
   .dlg { padding: 10px 12px; }
   #cardImg { display: block; width: auto !important; max-width: 100%; max-height: 62dvh; margin: 0 auto; }
-  .welcome { max-height: 100%; overflow: auto; padding-top: 8px; padding-bottom: 8px; }
-  .welcome h2 { margin-top: 0; }
+  #zoomBar { position: fixed; right: max(10px, env(safe-area-inset-right)); bottom: 62px; top: auto; flex-direction: column; z-index: 15; }
+  #zoomBar button { min-width: 42px; min-height: 42px; font-size: 18px; }
+  html.noGame #zoomBar, html.noGame #btnExport, html.noGame #btnImport, html.noGame #btnNew { display: none; }
+  #stage:has(.welcome) { height: 100% !important; }
+  .welcome { width: min(560px, 94%); align-self: flex-start; margin: 4px auto; padding: 8px 14px; font-size: 13px; }
+  .welcome h2 { margin: 0 0 2px; font-size: 15px; }
+  .welcome p { margin: 2px 0; font-size: 12px; }
+  .welcome input { margin: 4px 0 !important; padding: 7px 9px !important; font-size: 16px; }
+  .welcome .campPick { margin: 5px 0 2px; gap: 8px; }
+  .welcome .campPick button { padding: 9px; font-size: 15px; }
 }
 @media (pointer: coarse) and (orientation: portrait) and (max-width: 600px) {
   #rotate { display: grid; place-items: center; position: fixed; inset: 0; z-index: 99; padding: 24px; text-align: center; background: var(--panel); font-size: 18px; font-weight: 600; }
@@ -1849,7 +1865,7 @@ function buildStage() {
   fit();
   requestAnimationFrame(() => { const sc = $('#scroller'); sc.scrollLeft = S.camp === 'B' ? 0 : sc.scrollWidth; });
 }
-function fit() { const box = $('#boardBox'); if (!box) return; const h = Math.max(isPhone() ? 200 : 380, $('#scroller').clientHeight - 2) * UI.zoom; box.style.height = h + 'px'; box.style.width = (h * IW / IH) + 'px'; $('#stage').style.height = h + 'px'; }
+function fit() { const box = $('#boardBox'); if (!box) return; const h = Math.max(isPhone() ? 120 : 380, $('#scroller').clientHeight - 2) * UI.zoom; box.style.height = h + 'px'; box.style.width = (h * IW / IH) + 'px'; $('#stage').style.height = h + 'px'; }
 function svgPt(ev) { const svg = $('#svg'); const b = svg.getBoundingClientRect(); return [(ev.clientX - b.left) * IW / b.width, (ev.clientY - b.top) * IH / b.height]; }
 function hover(ev) {
   const [x, y] = svgPt(ev); const h = locate(x, y); const tip = $('#tip'); const L = [];
@@ -2392,12 +2408,31 @@ document.addEventListener('keydown', e => {
   e.preventDefault(); const r = document.createRange(); r.selectNodeContents(lastMsg); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
 });
 $('#promptEnd').onclick = () => { if (S.phase === 'deploy') { UI.sel = null; UI.depMode = 'pions'; } else { UI.mode = null; UI.sel = null; UI.activeOrder = null; } refresh(); };
-$('#btnSide').onclick = () => { if (!S) return; S.sideHidden = !S.sideHidden; save(); refresh(); };
+$('#btnSide').onclick = () => { if (!S) return; S.sideHidden = !S.sideHidden; save(); refresh(); if (isPhone()) zoomTo(UI.zoom); };
 if (!document.fullscreenEnabled) $('#btnFull').hidden = true;
 $('#btnFull').onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); };
 document.addEventListener('fullscreenchange', () => { $('#btnFull').textContent = document.fullscreenElement ? 'Quitter le plein écran' : 'Plein écran'; fit(); });
-$('#zIn').onclick = () => { UI.zoom = Math.min(2.5, UI.zoom * 1.25); fit(); };
-$('#zOut').onclick = () => { UI.zoom = Math.max(1, UI.zoom / 1.25); fit(); };
+// zoom autour d'un point de la carte ; sur téléphone, on peut dézoomer jusqu'à voir toute la carte
+const zoomMin = () => { if (!isPhone()) return 1; const sc = $('#scroller'), side = $('#side'); return Math.min(1, (sc.clientWidth - (side ? side.offsetWidth : 0)) / (sc.clientHeight * IW / IH)); };
+function zoomTo(z, cx, cy) {
+  const sc = $('#scroller'), box = $('#boardBox'); if (!box) return;
+  const px = cx ?? sc.clientWidth / 2, py = cy ?? sc.clientHeight / 2;
+  const bx = (sc.scrollLeft + px - box.offsetLeft) / box.offsetWidth, by = (sc.scrollTop + py - box.offsetTop) / box.offsetHeight;
+  UI.zoom = Math.min(4, Math.max(zoomMin(), z)); fit();
+  sc.scrollLeft = bx * box.offsetWidth + box.offsetLeft - px; sc.scrollTop = by * box.offsetHeight + box.offsetTop - py;
+}
+$('#zIn').onclick = () => zoomTo(UI.zoom * 1.25);
+$('#zOut').onclick = () => zoomTo(UI.zoom / 1.25);
+(() => {
+  const sc = $('#scroller'); let pin = null;
+  const mid = t => { const r = sc.getBoundingClientRect(); return [(t[0].clientX + t[1].clientX) / 2 - r.left, (t[0].clientY + t[1].clientY) / 2 - r.top, Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)]; };
+  sc.addEventListener('touchstart', e => { if (e.touches.length === 2) { pin = { d: mid(e.touches)[2], z: UI.zoom }; $('#tip').style.display = 'none'; } }, { passive: true });
+  sc.addEventListener('touchmove', e => { if (!pin || e.touches.length !== 2) return; e.preventDefault(); const [x, y, d] = mid(e.touches); zoomTo(pin.z * d / pin.d, x, y); }, { passive: false });
+  const end = e => { if (pin && e.touches.length < 2) { pin = null; UI.justDragged = true; setTimeout(() => { UI.justDragged = false; }, 250); } };
+  sc.addEventListener('touchend', end); sc.addEventListener('touchcancel', end);
+  sc.addEventListener('gesturestart', e => e.preventDefault());
+  sc.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); const r = sc.getBoundingClientRect(); zoomTo(UI.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+})();
 addEventListener('resize', fit);
 // cliquer-glisser sur le plateau : la carte défile
 (() => {
@@ -2409,6 +2444,7 @@ addEventListener('resize', fit);
 
 // ------------------------------------------------------------------ démarrage
 function welcome() {
+  document.documentElement.classList.add('noGame');
   document.body.className = ''; $('#hCamp').replaceChildren(); $('#hStat').replaceChildren(); $('#timeline').replaceChildren(); $('#tabs').replaceChildren(); $('#panel').replaceChildren(); $('#prompt').style.display = 'none';
   const st = $('#stage'); st.replaceChildren();
   const w = el('div', { class: 'welcome' }, el('h2', { text: 'Nouvelle partie' }), el('p', { text: 'Choisissez votre camp. La page garde la partie dans ce navigateur ; pensez aussi à « Sauvegarder » dans un fichier à chaque tour.' }),
@@ -2417,7 +2453,7 @@ function welcome() {
   st.append(w);
 }
 function begin(camp) { S = freshState(camp); UI.depMode = 'pions'; save(); start(); }
-function start() { UI.tab = 'phase'; buildStage(); refresh(); }
+function start() { UI.tab = 'phase'; buildStage(); refresh(); if (isPhone()) zoomTo(0); }
 // smartphone en paysage : tiroir du panneau, qui s'efface quand il faut viser le plateau et revient ensuite
 const PHONE_Q = '(pointer: coarse) and (orientation: landscape) and (max-height: 520px)';
 const isPhone = () => matchMedia(PHONE_Q).matches;
@@ -2445,6 +2481,7 @@ $('#netRm').onclick = () => { UI.netRm = !UI.netRm; phoneBtn(); };
 addEventListener('orientationchange', () => setTimeout(() => { fit(); if (S) refresh(); }, 300));
 function refresh() {
   if (!S) return;
+  document.documentElement.classList.remove('noGame');
   const canHide = S.phase !== 'deploy'; const hidden = canHide && !!S.sideHidden;
   document.documentElement.classList.toggle('sideHidden', hidden);
   $('#btnSide').hidden = !canHide; $('#btnSide').textContent = hidden ? 'Afficher les unités' : 'Replier les unités';
@@ -2513,6 +2550,7 @@ function netEnter(camp) {
   netWatch();
 }
 function netLogin(msg) {
+  document.documentElement.classList.add('noGame');
   document.body.className = ''; const st = $('#stage'); st.replaceChildren();
   const pwd = el('input', { type: 'password', placeholder: 'Mot de passe du camp', style: 'width:100%;padding:10px;margin:8px 0;box-sizing:border-box' });
   const err = el('div', { class: 'small', style: 'color:var(--err)', text: msg || '' });
