@@ -17,6 +17,7 @@ Sans `firebase-config.js` rempli, les pages restent en copier-coller.
    Settings > Pages > branche main, dossier racine.
 
 ## Adresses
+- Webapp : https://jef1234567.github.io/raspoutitsa/
 - CMI : https://<compte>.github.io/<depot>/joueur.html
 - Arbitre : https://<compte>.github.io/<depot>/arbitre.html
 
