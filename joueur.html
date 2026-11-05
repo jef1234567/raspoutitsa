@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Raspoutitsa – Poste du CMI</title>
 <style>
 /* Mise en page : bandeau de tour, plateau défilant à gauche, panneau de phase à droite, frise en bas */
@@ -197,6 +197,35 @@ dialog::backdrop { background: rgba(0,0,0,.4); }
 .campPick { display: flex; gap: 12px; margin: 14px 0; }
 .campPick button { flex: 1; padding: 18px; font-size: 16px; font-weight: 700; }
 .campPick .B { color: var(--B); border-color: var(--B); } .campPick .R { color: var(--R); border-color: var(--R); }
+
+/* Smartphone en paysage : plateau plein écran, panneau en tiroir. Les écrans d'ordinateur ne sont pas concernés. */
+#panelBtn, #netRm, #rotate { display: none; }
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 520px) {
+  html, body { height: 100dvh; overflow: hidden; }
+  header { gap: 6px; padding: 3px 8px; padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); overflow-x: auto; }
+  header h1, #saveInfo, footer { display: none; }
+  header .spacer { min-width: 4px; }
+  header button.small { padding: 3px 7px; font-size: 11.5px; }
+  #hStat { font-size: 11.5px; }
+  #prompt { padding: 3px 8px; font-size: 11.5px; line-height: 1.25; padding-left: max(8px, env(safe-area-inset-left)); }
+  #stage { min-height: 0; }
+  #side { width: 140px; padding: 5px; padding-left: max(5px, env(safe-area-inset-left)); }
+  #scroller { touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; }
+  aside { position: fixed; top: 0; right: 0; bottom: 0; width: min(400px, 62vw); z-index: 20; transform: translateX(100%); transition: transform .18s; box-shadow: -6px 0 22px rgba(0,0,0,.28); padding-right: env(safe-area-inset-right); }
+  html.panelOpen aside { transform: none; }
+  #panelBtn.on { display: block; position: fixed; right: max(10px, env(safe-area-inset-right)); bottom: 10px; z-index: 21; min-height: 42px; padding: 6px 14px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+  html.panelOpen #panelBtn.on { right: calc(min(400px, 62vw) + 8px); }
+  #netRm.on { display: inline-block; margin-left: 8px; }
+  #netRm.active { background: var(--err, #c62828); color: #fff; }
+  dialog { max-height: 94dvh; overflow: auto; }
+  .dlg { padding: 10px 12px; }
+  #cardImg { display: block; width: auto !important; max-width: 100%; max-height: 62dvh; margin: 0 auto; }
+  .welcome { max-height: 100%; overflow: auto; padding-top: 8px; padding-bottom: 8px; }
+  .welcome h2 { margin-top: 0; }
+}
+@media (pointer: coarse) and (orientation: portrait) and (max-width: 600px) {
+  #rotate { display: grid; place-items: center; position: fixed; inset: 0; z-index: 99; padding: 24px; text-align: center; background: var(--panel); font-size: 18px; font-weight: 600; }
+}
 </style>
 </head>
 <body>
@@ -216,7 +245,7 @@ dialog::backdrop { background: rgba(0,0,0,.4); }
 </header>
 <main id="main">
   <div id="boardWrap">
-    <div id="prompt"><span id="promptTxt"></span><button class="small" id="promptEnd">Terminer</button></div>
+    <div id="prompt"><span id="promptTxt"></span><button class="small" id="netRm">Mode : ajouter</button><button class="small" id="promptEnd">Terminer</button></div>
     <div id="fxToast"><span id="fxTxt"></span><button class="small" id="fxSkip">Passer</button></div>
     <div id="scroller">
       <div id="zoomBar"><button class="small" id="zOut" title="Dézoomer">−</button><button class="small" id="zIn" title="Zoomer">+</button></div>
@@ -229,6 +258,8 @@ dialog::backdrop { background: rgba(0,0,0,.4); }
   </aside>
 </main>
 <footer id="timeline"></footer>
+<button id="panelBtn" class="primary">Ordres</button>
+<div id="rotate">Tournez le téléphone en mode paysage pour jouer.</div>
 <dialog id="msgDlg"><div class="dlg"><h2 id="msgTitle"></h2><div id="msgIntro" class="small"></div><pre class="msg" id="msgText"></pre><div class="acts"><span class="small muted" id="msgCopied"></span><button id="msgCopy" class="primary">Copier le message</button><button id="msgClose">Fermer</button></div></div></dialog>
 <dialog id="cardDlg"><div class="dlg"><img id="cardImg" alt="" style="width:100%;border-radius:8px"><div id="cardInfo" class="small" style="margin-top:8px"></div><div class="acts"><button id="cardClose">Fermer</button><button id="cardPlay" class="primary">Jouer cette carte</button></div></div></dialog>
 <dialog id="askDlg"><div class="dlg"><h2 id="askTitle"></h2><div id="askBody"></div><div class="acts"><button id="askNo">Annuler</button><button id="askYes" class="primary">Confirmer</button></div></div></dialog>
@@ -1812,13 +1843,13 @@ function buildStage() {
   const box = el('div', { id: 'boardBox' }, el('img', { src: BOARD_IMG, alt: 'Plateau' }));
   const svg = sv('svg', { id: 'svg', viewBox: `0 0 ${IW} ${IH}` }); box.append(svg);
   if (S.camp === 'B') stage.append(side, box); else stage.append(box, side);
-  svg.addEventListener('click', ev => boardClick(ev));
+  svg.addEventListener('click', ev => { boardClick(ev, !!(isPhone() && UI.netRm && netEditing())); if (isPhone()) { hover(ev); clearTimeout(UI.tipT); UI.tipT = setTimeout(() => { $('#tip').style.display = 'none'; }, 2500); } });
   svg.addEventListener('contextmenu', ev => { if (!netEditing()) return; ev.preventDefault(); boardClick(ev, true); });
   svg.addEventListener('mousemove', ev => hover(ev)); svg.addEventListener('mouseleave', () => { $('#tip').style.display = 'none'; });
   fit();
   requestAnimationFrame(() => { const sc = $('#scroller'); sc.scrollLeft = S.camp === 'B' ? 0 : sc.scrollWidth; });
 }
-function fit() { const box = $('#boardBox'); if (!box) return; const h = Math.max(380, $('#scroller').clientHeight - 2) * UI.zoom; box.style.height = h + 'px'; box.style.width = (h * IW / IH) + 'px'; $('#stage').style.height = h + 'px'; }
+function fit() { const box = $('#boardBox'); if (!box) return; const h = Math.max(isPhone() ? 200 : 380, $('#scroller').clientHeight - 2) * UI.zoom; box.style.height = h + 'px'; box.style.width = (h * IW / IH) + 'px'; $('#stage').style.height = h + 'px'; }
 function svgPt(ev) { const svg = $('#svg'); const b = svg.getBoundingClientRect(); return [(ev.clientX - b.left) * IW / b.width, (ev.clientY - b.top) * IH / b.height]; }
 function hover(ev) {
   const [x, y] = svgPt(ev); const h = locate(x, y); const tip = $('#tip'); const L = [];
@@ -2362,6 +2393,7 @@ document.addEventListener('keydown', e => {
 });
 $('#promptEnd').onclick = () => { if (S.phase === 'deploy') { UI.sel = null; UI.depMode = 'pions'; } else { UI.mode = null; UI.sel = null; UI.activeOrder = null; } refresh(); };
 $('#btnSide').onclick = () => { if (!S) return; S.sideHidden = !S.sideHidden; save(); refresh(); };
+if (!document.fullscreenEnabled) $('#btnFull').hidden = true;
 $('#btnFull').onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); };
 document.addEventListener('fullscreenchange', () => { $('#btnFull').textContent = document.fullscreenElement ? 'Quitter le plein écran' : 'Plein écran'; fit(); });
 $('#zIn').onclick = () => { UI.zoom = Math.min(2.5, UI.zoom * 1.25); fit(); };
@@ -2370,7 +2402,7 @@ addEventListener('resize', fit);
 // cliquer-glisser sur le plateau : la carte défile
 (() => {
   const sc = $('#scroller'); let d = null;
-  sc.addEventListener('pointerdown', e => { if (e.button !== 0 || e.target.closest('#side, #zoomBar, button, .tok')) return; d = { x: e.clientX, y: e.clientY, l: sc.scrollLeft, t: sc.scrollTop, moved: false }; });
+  sc.addEventListener('pointerdown', e => { if (e.pointerType === 'touch' || e.button !== 0 || e.target.closest('#side, #zoomBar, button, .tok')) return; d = { x: e.clientX, y: e.clientY, l: sc.scrollLeft, t: sc.scrollTop, moved: false }; });
   addEventListener('pointermove', e => { if (!d) return; const dx = e.clientX - d.x, dy = e.clientY - d.y; if (!d.moved && Math.hypot(dx, dy) > 6) { d.moved = true; sc.classList.add('dragging'); $('#tip').style.display = 'none'; } if (d.moved) { sc.scrollLeft = d.l - dx; sc.scrollTop = d.t - dy; } });
   addEventListener('pointerup', () => { if (!d) return; if (d.moved) { UI.justDragged = true; setTimeout(() => { UI.justDragged = false; }, 0); } sc.classList.remove('dragging'); d = null; });
 })();
@@ -2386,12 +2418,38 @@ function welcome() {
 }
 function begin(camp) { S = freshState(camp); UI.depMode = 'pions'; save(); start(); }
 function start() { UI.tab = 'phase'; buildStage(); refresh(); }
+// smartphone en paysage : tiroir du panneau, qui s'efface quand il faut viser le plateau et revient ensuite
+const PHONE_Q = '(pointer: coarse) and (orientation: landscape) and (max-height: 520px)';
+const isPhone = () => matchMedia(PHONE_Q).matches;
+function setPanel(open) { document.documentElement.classList.toggle('panelOpen', open); phoneBtn(); }
+function phoneBtn() {
+  const b = $('#panelBtn'), open = document.documentElement.classList.contains('panelOpen');
+  const cr = RN.active && netPending();
+  b.classList.toggle('on', !!S); b.textContent = open ? 'Voir le plateau' : cr ? 'Compte rendu reçu' : S && S.phase === 'deploy' ? 'Déploiement' : 'Ordres';
+  const n = $('#netRm'), e = !!S && netEditing(); if (!e) UI.netRm = false;
+  n.classList.toggle('on', e); n.classList.toggle('active', !!UI.netRm); n.textContent = UI.netRm ? 'Mode : retirer' : 'Mode : ajouter';
+}
+function phoneSync() {
+  const pick = !!UI.mode || (S.phase === 'deploy' && (UI.depMode === 'net' || !!UI.sel));
+  const cr = RN.active && netPending(), crKey = cr ? `${cr.turn}.${cr.rev}` : null;
+  if (pick && !UI.phonePick) setPanel(false);
+  else if (!pick && UI.phonePick && S.phase !== 'deploy') setPanel(true);
+  if (crKey && crKey !== UI.phoneCr) setPanel(true);
+  if (S.notice && S.notice !== UI.phoneNote) setPanel(true);
+  UI.phonePick = pick; UI.phoneCr = crKey; UI.phoneNote = S.notice;
+  phoneBtn();
+  if (isPhone()) fit();
+}
+$('#panelBtn').onclick = () => setPanel(!document.documentElement.classList.contains('panelOpen'));
+$('#netRm').onclick = () => { UI.netRm = !UI.netRm; phoneBtn(); };
+addEventListener('orientationchange', () => setTimeout(() => { fit(); if (S) refresh(); }, 300));
 function refresh() {
   if (!S) return;
   const canHide = S.phase !== 'deploy'; const hidden = canHide && !!S.sideHidden;
   document.documentElement.classList.toggle('sideHidden', hidden);
   $('#btnSide').hidden = !canHide; $('#btnSide').textContent = hidden ? 'Afficher les unités' : 'Replier les unités';
   header(); tabs(); panel(); drawBoard(); timeline();
+  phoneSync();
   const o = UI.activeOrder !== null ? S.orders[UI.activeOrder] : null;
   const txt = modeText(o); $('#prompt').style.display = txt ? 'block' : 'none'; $('#promptTxt').textContent = txt || '';
 }
